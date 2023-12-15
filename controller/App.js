@@ -3,6 +3,7 @@ import { Modal, StyleSheet, Text, TextInput, TouchableNativeFeedback, Vibration,
 import { Accelerometer } from 'expo-sensors';
 import { useState, useEffect, useRef } from "react";
 import Wheel from './components/Wheel.js';
+import Scanner from './components/Scanner';
 
 // TODO add user identification
 // TODO add connnection using qr-code
@@ -10,8 +11,7 @@ import Wheel from './components/Wheel.js';
 export default function App() {
     Accelerometer.setUpdateInterval(100)
 
-    const [url, setUrl] = useState("ws://127.0.0.1:8080")
-    // const [url, setUrl] = useState("ws://192.168.1.109:8080")
+    const [url, setUrl] = useState("ws://127.0.0.1:8080/ws")
     const [showModal, setShowModal] = useState(false)
     const [on, setOn] = useState(false)
     const [connected, setConnected] = useState(false)
@@ -69,6 +69,13 @@ export default function App() {
             ws.current.send(JSON.stringify([rotation, acceleration]))
         }
     }, [rotation, acceleration])
+
+    if (!connected) {
+        return <Scanner onScanned={(url)=>{
+            setUrl(url)
+            connect()
+        }} />
+    }
 
     return (
         <View style={[s.container, { backgroundColor: '#000' }]} >

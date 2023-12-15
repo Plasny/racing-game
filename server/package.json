@@ -3,12 +3,15 @@
   "module": "index.ts",
   "type": "module",
   "scripts": {
-      "start": "bun run index.ts"
+    "start": "bun run index.ts"
   },
   "devDependencies": {
     "bun-types": "latest"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.3"
   }
 }
