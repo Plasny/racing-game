@@ -11,7 +11,7 @@ const server = Bun.serve({
     if (url.pathname === "/") {
       try {
         const qr = await QRCode.toDataURL(
-          `ws://${IP}:${server.port}/ws`,
+          `${IP}:${server.port}`,
         );
 
         return new Response(`<img src="${qr}" />`, {
