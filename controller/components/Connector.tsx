@@ -24,17 +24,41 @@ export default function Connector(
     getBarCodeScannerPermissions();
   }, []);
 
-  const handleConnect = (host: string) => {
+  const [error, setError] = useState(null);
+  useEffect(() => {
+    if (hasPermission === null) {
+      setError("Requesting for camera permission");
+    } else if (hasPermission === false) {
+      setError("No access to camera");
+    } else {
+      setError(null);
+    }
+  }, [hasPermission]);
+
+  const handleConnect = async (host: string) => {
     setScanned(true);
-    Vibration.vibrate(100);
-    onScanned(`ws://${host}/ws`);
+
+    try {
+      const isAvailable =
+        (await (await fetch(`http://${host}/ping`)).text()) ===
+          "pong, available";
+
+      if (isAvailable) {
+        Vibration.vibrate(100);
+        onScanned(`ws://${host}/ws`);
+      } else {
+        setError("Connection failed, the server is not available");
+      }
+    } catch (error) {
+      setError("Connection failed, the server is not available");
+    }
   };
 
   const [host, setHost] = useState("localhost:8080");
 
   return (
     <View style={s.container}>
-      {hasPermission
+      {error === null
         ? (
           <BarCodeScanner
             onBarCodeScanned={scanned
@@ -44,11 +68,25 @@ export default function Connector(
           />
         )
         : (
-          <Text>
-            {hasPermission === null
-              ? "Requesting for camera permission"
-              : "No access to camera"}
-          </Text>
+          <>
+            <Text style={s.errorStyle}>
+              {error}
+            </Text>
+
+            {hasPermission &&
+              (
+                <TouchableNativeFeedback
+                  onPress={() => {
+                    setError(null);
+                    setScanned(false);
+                  }}
+                >
+                  <View style={[s.btn]}>
+                    <Text style={s.btnText}>Try again</Text>
+                  </View>
+                </TouchableNativeFeedback>
+              )}
+          </>
         )}
 
       <View style={[s.container, { backgroundColor: "#0009" }]}>
@@ -94,5 +132,11 @@ const s = StyleSheet.create({
     color: "#fff",
     fontSize: 20,
     padding: 20,
+  },
+  errorStyle: {
+    color: "red",
+    fontSize: 20,
+    marginTop: 80,
+    textAlign: "center",
   },
 });

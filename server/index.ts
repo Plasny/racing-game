@@ -23,6 +23,10 @@ const server = Bun.serve({
       }
     }
 
+    if (url.pathname === "/ping") {
+      return new Response("pong, available");
+    }
+
     if (url.pathname === "/ws") {
       // upgrade the request to a WebSocket
       if (server.upgrade(req)) {
