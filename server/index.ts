@@ -8,7 +8,7 @@ const server = Bun.serve({
   async fetch(req, server) {
     const url = new URL(req.url).pathname;
 
-    if (url === "/") {
+    if (url === "/joincode") {
       try {
         const qr = await QRCode.toDataURL(
           `${IP}:${server.port}`,
