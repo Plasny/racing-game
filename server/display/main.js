@@ -27,7 +27,6 @@ scene.add(cube);
 camera.position.z = 5;
 
 initSocket((msg) => {
-  console.log(msg);
   const [rotation, acceleration] = JSON.parse(msg);
 
   cube.rotation.z = rotation * 0.01;
