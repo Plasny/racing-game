@@ -47,6 +47,8 @@ const server = Bun.serve({
       if (ws.data.isDisplay) {
         ws.subscribe("display-broadcast");
         console.log("display connected");
+      } else {
+        console.log("controller connected");
       }
     },
     message(ws, message: string) {
@@ -61,6 +63,8 @@ const server = Bun.serve({
       if (ws.data.isDisplay) {
         ws.unsubscribe("display-broadcast");
         console.log("display disconnected");
+      } else {
+        console.log("controller disconnected");
       }
     },
   },

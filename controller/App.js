@@ -10,8 +10,8 @@ import Wheel from './components/Wheel.js';
 export default function App() {
     Accelerometer.setUpdateInterval(100)
 
-    const [url, setUrl] = useState("ws://127.0.0.1:8080")
-    // const [url, setUrl] = useState("ws://192.168.1.109:8080")
+    // const [url, setUrl] = useState("ws://127.0.0.1:8080/controller/ws")
+    const [url, setUrl] = useState("ws://192.168.206.180:8080/controller/ws")
     const [showModal, setShowModal] = useState(false)
     const [on, setOn] = useState(false)
     const [connected, setConnected] = useState(false)
