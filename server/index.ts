@@ -9,6 +9,10 @@ enum WsType {
   UI,
   Controller,
 }
+enum MsgType {
+  Config = "cfg",
+  Action = "act",
+}
 
 const game = new Game();
 
@@ -60,9 +64,12 @@ const server = Bun.serve({
 
         console.log("ui connected");
       } else if (ws.data.type === WsType.Controller) {
+        const id = ws.data.id;
+        const car = game.get(id);
+
         server.publish(
           "ui-broadcast",
-          `<div id="players" hx-swap-oob="beforeend">controller ${ws.data.id} connected</div>`,
+          `<div id="players" hx-swap-oob="beforeend"><div id="player-${id}" style="color: ${car?.color};">${id} - ${car?.name}</div></div>`,
         );
 
         console.log("controller connected");
@@ -70,7 +77,18 @@ const server = Bun.serve({
     },
     message(ws, message: string) {
       if (ws.data.type === WsType.Controller) {
-        server.publish("display-broadcast", message);
+        const msg = JSON.parse(message);
+        const id = ws.data.id;
+
+        if (msg.type === MsgType.Config) {
+          game.updateCar(id, msg.data);
+          server.publish(
+            "ui-broadcast",
+            `<div id="player-${id}" style="color: ${msg.data.color};">${id} - ${msg.data.name}</div>`,
+          );
+        } else if (msg.type === MsgType.Action) {
+          server.publish("display-broadcast", JSON.stringify(msg.data));
+        }
       }
     },
     close(ws) {

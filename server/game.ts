@@ -1,20 +1,31 @@
 interface Car {
-  id: number;
+  id?: number;
+  name: string;
+  color: string;
 }
 
 class Game {
-  id = 0;
-  cars: Car[] = [];
+  private id = 0;
+  private cars: Car[] = [];
 
-  add(): number {
+  public add(): number {
     this.cars[this.id] = {
       id: this.id,
+      name: "unnamed",
+      color: "gray",
     } as Car;
 
     return this.id++;
   }
-  remove(id: number) {
+  public get(id: number): Car | undefined {
+    return this.cars.find((car) => car?.id === id);
+  }
+  public remove(id: number) {
     this.cars = this.cars.filter((car) => car.id !== id);
+  }
+
+  public updateCar(id: number, car: Car) {
+    this.cars[id] = { ...car, id } as Car;
   }
 }
 

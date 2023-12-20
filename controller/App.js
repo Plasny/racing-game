@@ -84,7 +84,7 @@ export default function App() {
     useEffect(() => {
         if (connected) {
             // console.log(rotation, acceleration)
-            ws.current.send(JSON.stringify([rotation, acceleration]))
+            ws.current.send(JSON.stringify({ type: "act", data: [rotation, acceleration] }))
         }
     }, [rotation, acceleration])
 
