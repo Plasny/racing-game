@@ -1,7 +1,16 @@
 import QRCode from "qrcode";
+import Game from "./game";
 
 const IP = "192.168.206.180"; // FIXME: paweł
 const PORT = 8080;
+
+enum WsType {
+  Display,
+  UI,
+  Controller,
+}
+
+const game = new Game();
 
 const server = Bun.serve({
   port: PORT,
@@ -30,32 +39,52 @@ const server = Bun.serve({
       return controllerRouter(url.replace("/controller", ""), req, server);
     }
 
+    if (url === "/ui") {
+      if (server.upgrade(req, { data: { type: WsType.UI } })) {
+        return;
+      }
+
+      return new Response("display ws upgrade failed", { status: 500 });
+    }
+
     return new Response("not found", { status: 404 });
   },
   websocket: {
     open(ws) {
-      console.log("connection opened");
-
-      if (ws.data.isDisplay) {
+      if (ws.data.type === WsType.Display) {
         ws.subscribe("display-broadcast");
+
         console.log("display connected");
-      } else {
+      } else if (ws.data.type === WsType.UI) {
+        ws.subscribe("ui-broadcast");
+
+        console.log("ui connected");
+      } else if (ws.data.type === WsType.Controller) {
+        server.publish(
+          "ui-broadcast",
+          `<div id="players" hx-swap-oob="beforeend">controller ${ws.data.id} connected</div>`,
+        );
+
         console.log("controller connected");
       }
     },
     message(ws, message: string) {
-      console.log(message);
-      ws.send(message); // echo back the message
-
-      server.publish("display-broadcast", message);
+      if (ws.data.type === WsType.Controller) {
+        server.publish("display-broadcast", message);
+      }
     },
     close(ws) {
-      console.log("connection closed");
-
-      if (ws.data.isDisplay) {
+      if (ws.data.type === WsType.Display) {
         ws.unsubscribe("display-broadcast");
+
         console.log("display disconnected");
-      } else {
+      } else if (ws.data.type === WsType.UI) {
+        ws.unsubscribe("ui-broadcast");
+
+        console.log("ui disconnected");
+      } else if (ws.data.type === WsType.Controller) {
+        game.remove(ws.data.id);
+
         console.log("controller disconnected");
       }
     },
@@ -83,7 +112,7 @@ function displayRouter(url: string, req, server) {
   }
 
   if (url === "/ws") {
-    if (server.upgrade(req, { data: { isDisplay: true } })) {
+    if (server.upgrade(req, { data: { type: WsType.Display } })) {
       return;
     }
 
@@ -99,7 +128,9 @@ function controllerRouter(url: string, req, server) {
   }
 
   if (url === "/ws") {
-    if (server.upgrade(req, { data: { isDisplay: false } })) {
+    const id = game.add();
+
+    if (server.upgrade(req, { data: { type: WsType.Controller, id } })) {
       return;
     }
 

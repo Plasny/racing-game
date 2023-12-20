@@ -10,6 +10,7 @@
 		</style>
 
 		<script src="https://unpkg.com/htmx.org@1.9.9"></script>
+		<script src="https://unpkg.com/htmx.org/dist/ext/ws.js"></script>
 		<script type="importmap">
 		  {
 			"imports": {
@@ -21,8 +22,10 @@
 	</head>
 
 	<body>
-		<div class="absolute">
+		<div class="absolute bg-white" hx-ext="ws" ws-connect="/ui">
 			<div hx-get="/joincode" hx-trigger="load" hx-swap="outerHTML"></div>
+
+			<div id="players"></div>
 		</div>
 
 		<script type="module" src="/display/main.js"></script>
