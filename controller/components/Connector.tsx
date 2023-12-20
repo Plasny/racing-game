@@ -41,11 +41,11 @@ export default function Connector(
     try {
       const isAvailable =
         (await (await fetch(`http://${host}/ping`)).text()) ===
-          "pong, available";
+          "pong [available]";
 
       if (isAvailable) {
         Vibration.vibrate(100);
-        onScanned(`ws://${host}/ws`);
+        onScanned(`ws://${host}/controller/ws`);
       } else {
         setError("Connection failed, the server is not available");
       }
