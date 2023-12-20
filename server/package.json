@@ -12,6 +12,7 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "qrcode": "^1.5.3",
     "three": "^0.159.0"
   }
 }

@@ -1,8 +1,14 @@
 import { StatusBar } from 'expo-status-bar';
-import { Modal, StyleSheet, Text, TextInput, TouchableNativeFeedback, Vibration, View } from 'react-native';
+import { StyleSheet, Text, TouchableNativeFeedback, Vibration, View } from 'react-native';
 import { Accelerometer } from 'expo-sensors';
 import { useState, useEffect, useRef } from "react";
+import * as ScreenOrientation from 'expo-screen-orientation';
 import Wheel from './components/Wheel.js';
+import Connector from './components/Connector';
+
+// hides warnings
+import { LogBox } from 'react-native';
+LogBox.ignoreLogs(['new NativeEventEmitter']);
 
 // TODO add user identification
 // TODO add connnection using qr-code
@@ -10,9 +16,7 @@ import Wheel from './components/Wheel.js';
 export default function App() {
     Accelerometer.setUpdateInterval(100)
 
-    // const [url, setUrl] = useState("ws://127.0.0.1:8080/controller/ws")
-    const [url, setUrl] = useState("ws://192.168.206.180:8080/controller/ws")
-    const [showModal, setShowModal] = useState(false)
+    const [url, setUrl] = useState(null)
     const [on, setOn] = useState(false)
     const [connected, setConnected] = useState(false)
     const [subscription, setSubscription] = useState(null);
@@ -49,6 +53,20 @@ export default function App() {
     }
 
     useEffect(() => {
+        if (url === null && connected) {
+            ws.current.close()
+            ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT);
+        } else if (url !== null && connected) {
+            ws.current.close()
+            connect()
+            ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+        } else if (url !== null && !connected) {
+            connect()
+            ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+        }
+    }, [url]);
+
+    useEffect(() => {
         return () => {
             unsubscribe()
             ws.current.close()
@@ -70,65 +88,46 @@ export default function App() {
         }
     }, [rotation, acceleration])
 
+
     return (
-        <View style={[s.container, { backgroundColor: '#000' }]} >
+        <View style={[s.container]} >
             <StatusBar style="dark" />
 
-            <Modal
-                transparent={true}
-                visible={showModal}
-                animationType='fade'
-                onRequestClose={() => setShowModal(false)}
-            >
-                <View style={[s.container, { backgroundColor: '#0009' }]}>
-                    <Text style={s.text}>Enter server address</Text>
-                    <TextInput
-                        style={s.textInput}
-                        value={url}
-                        onChangeText={setUrl}
-                        keyboardType='url'
-                    />
-                </View>
-            </Modal>
+            {connected ? (
+                <View style={{ flex: 1, flexDirection: "row" }}>
+                    <View style={[s.col, { flex: 1 }]}>
+                        <Wheel width={300} height={300} />
+                        <Text style={s.absText}>{rotation}</Text>
+                    </View>
 
-            <View style={{ flex: 1, flexDirection: "row" }}>
-                <View style={[s.col, { flex: 1 }]}>
-                    <Wheel width={300} height={300} />
-                    <Text style={s.absText}>{rotation}</Text>
-                </View>
+                    <View style={s.col}>
+                        <Text style={s.text}>acceleration: {padZeros(acceleration)}</Text>
+                        <TouchableNativeFeedback
+                            onPress={() => {
+                                Vibration.vibrate(100)
+                                setOn(!on)
+                            }}
+                        >
+                            <View style={[s.btn, on ? { borderColor: '#aaa' } : null]}>
+                                <Text style={s.btnText}>{on ? "Stop\nengine" : "Start\nengine"}</Text>
+                            </View>
+                        </TouchableNativeFeedback>
 
-                <View style={s.col}>
-                    <Text style={s.text}>acceleration: {padZeros(acceleration)}</Text>
-                    <TouchableNativeFeedback
-                        onPress={() => {
-                            Vibration.vibrate(100)
-                            setOn(!on)
-                        }}
-                    >
-                        <View style={[s.btn, on ? { borderColor: '#aaa' } : null]}>
-                            <Text style={s.btnText}>{on ? "Stop\nengine" : "Start\nengine"}</Text>
-                        </View>
-                    </TouchableNativeFeedback>
-
-                    <TouchableNativeFeedback
-                        onPress={() => {
-                            Vibration.vibrate(100)
-                            if (connected)
-                                ws.current.close()
-                            else
-                                connect()
-                        }}
-                        onLongPress={() => {
-                            Vibration.vibrate(100)
-                            setShowModal(true)
-                        }}
-                    >
-                        <View style={[s.btn, connected ? { borderColor: '#aaa' } : null]}>
-                            <Text style={s.btnText}>{connected ? "Disconnect" : "Connect"}</Text>
-                        </View>
-                    </TouchableNativeFeedback>
+                        <TouchableNativeFeedback
+                            onPress={() => {
+                                Vibration.vibrate(100)
+                                setUrl(null)
+                            }}
+                        >
+                            <View style={[s.btn, { borderColor: '#aaa' }]}>
+                                <Text style={s.btnText}>Disconnect</Text>
+                            </View>
+                        </TouchableNativeFeedback>
+                    </View>
                 </View>
-            </View>
+            ) : (
+                <Connector onScanned={setUrl} />
+            )}
         </View>
     );
 }
@@ -136,8 +135,7 @@ export default function App() {
 const s = StyleSheet.create({
     container: {
         flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
+        backgroundColor: '#000'
     },
     col: {
         justifyContent: 'center',

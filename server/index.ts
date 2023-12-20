@@ -1,9 +1,28 @@
+import QRCode from "qrcode";
+
+const IP = "192.168.206.180"; // FIXME: paweł
 const PORT = 8080;
 
 const server = Bun.serve({
   port: PORT,
-  fetch(req, server) {
+  async fetch(req, server) {
     const url = new URL(req.url);
+
+    if (url.pathname === "/") {
+      try {
+        const qr = await QRCode.toDataURL(
+          `${IP}:${server.port}`,
+        );
+
+        return new Response(`<img src="${qr}" />`, {
+          headers: { "content-type": "text/html" },
+        });
+      } catch (e) {
+        console.log("error while generating a qrcode", e);
+        return new Response("could not generate a qrcode", { status: 500 });
+      }
+    }
+
     if (url.pathname === "/display") {
       return new Response(Bun.file("./display/index.html"));
     }
@@ -27,6 +46,10 @@ const server = Bun.serve({
       }
 
       return new Response("Upgrade failed :(", { status: 500 });
+    }
+
+    if (url.pathname === "/ping") {
+      return new Response("pong [available]");
     }
 
     if (url.pathname === "/controller/ws") {
