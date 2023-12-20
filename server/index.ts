@@ -6,9 +6,9 @@ const PORT = 8080;
 const server = Bun.serve({
   port: PORT,
   async fetch(req, server) {
-    const url = new URL(req.url);
+    const url = new URL(req.url).pathname;
 
-    if (url.pathname === "/") {
+    if (url === "/") {
       try {
         const qr = await QRCode.toDataURL(
           `${IP}:${server.port}`,
@@ -23,42 +23,11 @@ const server = Bun.serve({
       }
     }
 
-    if (url.pathname === "/display") {
-      return new Response(Bun.file("./display/index.html"));
+    if (url.startsWith("/display")) {
+      return displayRouter(url.replace("/display", ""), req, server);
     }
-    if (url.pathname === "/display/main.js") {
-      return new Response(Bun.file("./display/main.js"));
-    }
-    if (url.pathname === "/display/three.js") {
-      return new Response(
-        Bun.file("./node_modules/three/build/three.module.js"),
-      );
-    }
-    if (url.pathname === "/display/sockets.js") {
-      return new Response(
-        Bun.file("./display/sockets.js"),
-      );
-    }
-    if (url.pathname === "/display/ws") {
-      // upgrade the request to a WebSocket
-      if (server.upgrade(req, { data: { isDisplay: true } })) {
-        return; // do not return a Response
-      }
-
-      return new Response("Upgrade failed :(", { status: 500 });
-    }
-
-    if (url.pathname === "/ping") {
-      return new Response("pong [available]");
-    }
-
-    if (url.pathname === "/controller/ws") {
-      // upgrade the request to a WebSocket
-      if (server.upgrade(req, { data: { isDisplay: false } })) {
-        return; // do not return a Response
-      }
-
-      return new Response("Upgrade failed :(", { status: 500 });
+    if (url.startsWith("/controller")) {
+      return controllerRouter(url.replace("/controller", ""), req, server);
     }
 
     return new Response("not found", { status: 404 });
@@ -94,3 +63,48 @@ const server = Bun.serve({
 });
 
 console.log(`Listening on http://${server.hostname}:${server.port}`);
+
+function displayRouter(url: string, req, server) {
+  if (url === "") {
+    return new Response(Bun.file("./display/index.html"));
+  }
+  if (url === "/main.js") {
+    return new Response(Bun.file("./display/main.js"));
+  }
+  if (url === "/three.js") {
+    return new Response(
+      Bun.file("./node_modules/three/build/three.module.js"),
+    );
+  }
+  if (url === "/sockets.js") {
+    return new Response(
+      Bun.file("./display/sockets.js"),
+    );
+  }
+
+  if (url === "/ws") {
+    if (server.upgrade(req, { data: { isDisplay: true } })) {
+      return;
+    }
+
+    return new Response("display ws upgrade failed", { status: 500 });
+  }
+
+  return new Response("not found", { status: 404 });
+}
+
+function controllerRouter(url: string, req, server) {
+  if (url === "/ping") {
+    return new Response("pong [available]");
+  }
+
+  if (url === "/ws") {
+    if (server.upgrade(req, { data: { isDisplay: false } })) {
+      return;
+    }
+
+    return new Response("controller ws upgrade failed", { status: 500 });
+  }
+
+  return new Response("not found", { status: 404 });
+}

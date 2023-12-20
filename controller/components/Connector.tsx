@@ -40,7 +40,7 @@ export default function Connector(
 
     try {
       const isAvailable =
-        (await (await fetch(`http://${host}/ping`)).text()) ===
+        (await (await fetch(`http://${host}/controller/ping`)).text()) ===
           "pong [available]";
 
       if (isAvailable) {
