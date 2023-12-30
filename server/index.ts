@@ -1,7 +1,7 @@
 import QRCode from "qrcode";
 import Game from "./game";
 
-const IP = "192.168.206.180"; // FIXME: paweł
+const IP = "192.168.68.119"; // FIXME: paweł
 const PORT = 8080;
 
 enum WsType {
@@ -102,6 +102,10 @@ const server = Bun.serve({
         console.log("ui disconnected");
       } else if (ws.data.type === WsType.Controller) {
         game.remove(ws.data.id);
+        server.publish(
+          "ui-broadcast",
+          `<div id="player-${ws.data.id}"></div>`,
+        );
 
         console.log("controller disconnected");
       }

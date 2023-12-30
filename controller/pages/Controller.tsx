@@ -55,11 +55,13 @@ export default function Controller({ navigation, route }) {
   };
 
   useEffect(() => {
-    return () => {
+    const unsubscribe = navigation.addListener("beforeRemove", () => {
       unsubscribe();
       ws.current.close();
-    };
-  }, []);
+    });
+
+    return unsubscribe;
+  }, [navigation]);
 
   useEffect(() => {
     if (on) {
@@ -104,7 +106,7 @@ export default function Controller({ navigation, route }) {
           <TouchableNativeFeedback
             onPress={() => {
               Vibration.vibrate(100);
-              navigation.navigate("join");
+              navigation.replace("join");
             }}
           >
             <View style={[s.btn, { borderColor: "#aaa" }]}>

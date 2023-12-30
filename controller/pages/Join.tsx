@@ -33,7 +33,7 @@ export default function Join({ navigation }) {
 
     ws.current = new WebSocket(url);
     ws.current.onopen = () => {
-      navigation.navigate("controller", { ws });
+      navigation.replace("config", { ws });
     };
     ws.current.onclose = () => {
       setUrl(null);
