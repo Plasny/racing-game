@@ -12,6 +12,7 @@ enum WsType {
 enum MsgType {
   Config = "cfg",
   Action = "act",
+  Close = "cls",
 }
 
 const game = new Game();
@@ -86,8 +87,24 @@ const server = Bun.serve({
             "ui-broadcast",
             `<div id="player-${id}" style="color: ${msg.data.color};">${id} - ${msg.data.name}</div>`,
           );
+
+          server.publish(
+            "display-broadcast",
+            JSON.stringify({
+              type: MsgType.Config,
+              id,
+              data: msg.data,
+            }),
+          );
         } else if (msg.type === MsgType.Action) {
-          server.publish("display-broadcast", JSON.stringify(msg.data));
+          server.publish(
+            "display-broadcast",
+            JSON.stringify({
+              type: MsgType.Action,
+              id,
+              data: msg.data,
+            }),
+          );
         }
       }
     },
@@ -101,10 +118,20 @@ const server = Bun.serve({
 
         console.log("ui disconnected");
       } else if (ws.data.type === WsType.Controller) {
-        game.remove(ws.data.id);
+        const id = ws.data.id;
+
+        game.remove(id);
         server.publish(
           "ui-broadcast",
-          `<div id="player-${ws.data.id}"></div>`,
+          `<div id="player-${id}"></div>`,
+        );
+
+        server.publish(
+          "display-broadcast",
+          JSON.stringify({
+            type: MsgType.Close,
+            id,
+          }),
         );
 
         console.log("controller disconnected");
