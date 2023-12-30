@@ -13,24 +13,36 @@ const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-const geometry = new THREE.BoxGeometry(1, 1, 1);
-const cube = new THREE.Mesh(geometry, [
-  new THREE.MeshBasicMaterial({ color: 0xdd0000 }),
-  new THREE.MeshBasicMaterial({ color: 0xdd0000 }),
-  new THREE.MeshBasicMaterial({ color: 0x00dd00 }),
-  new THREE.MeshBasicMaterial({ color: 0x00dd00 }),
-  new THREE.MeshBasicMaterial({ color: 0x0000dd }),
-  new THREE.MeshBasicMaterial({ color: 0x0000dd }),
-]);
-scene.add(cube);
+const cubes = [];
 
 camera.position.z = 5;
 
 initSocket((msg) => {
-  const [rotation, acceleration] = JSON.parse(msg);
+  const { type, id, data } = JSON.parse(msg);
+  if (type === "cfg") {
+    const geometry = new THREE.BoxGeometry(1, 1, 1);
+    const cube = new THREE.Mesh(geometry, [
+      new THREE.MeshBasicMaterial({ color: data.color }),
+      new THREE.MeshBasicMaterial({ color: data.color }),
+      new THREE.MeshBasicMaterial({ color: data.color }),
+      new THREE.MeshBasicMaterial({ color: data.color }),
+      new THREE.MeshBasicMaterial({ color: data.color }),
+      new THREE.MeshBasicMaterial({ color: data.color }),
+    ]);
+    cubes[id] = cube;
+    scene.add(cube);
+  } else if (type === "act") {
+    const cube = cubes[id];
+    const [rotation, acceleration] = data;
 
-  cube.rotation.z = rotation * 0.01;
-  cube.position.z -= acceleration * 0.1;
+    cube.rotation.z = rotation * 0.01;
+    cube.position.z -= acceleration * 0.1;
+  } else if (type === "cls") {
+    const cube = cubes[id];
+    scene.remove(cube);
+
+    delete cubes[id];
+  }
 });
 
 function animate() {

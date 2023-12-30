@@ -3,10 +3,14 @@
 	<head>
 		<meta charset="utf-8">
 		<title>racing game</title>
+
+		<script src="https://cdn.jsdelivr.net/npm/@unocss/runtime"></script>
 		<style>
 			body { margin: 0; }
 		</style>
 
+		<script src="https://unpkg.com/htmx.org@1.9.9"></script>
+		<script src="https://unpkg.com/htmx.org/dist/ext/ws.js"></script>
 		<script type="importmap">
 		  {
 			"imports": {
@@ -16,7 +20,14 @@
 		  }
 		</script>
 	</head>
+
 	<body>
+		<div class="absolute bg-white" hx-ext="ws" ws-connect="/ui">
+			<div hx-get="/joincode" hx-trigger="load" hx-swap="outerHTML"></div>
+
+			<div id="players"></div>
+		</div>
+
 		<script type="module" src="/display/main.js"></script>
 	</body>
 </html>

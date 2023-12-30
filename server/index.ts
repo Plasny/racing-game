@@ -1,14 +1,28 @@
 import QRCode from "qrcode";
+import Game from "./game";
 
-const IP = "192.168.206.180"; // FIXME: paweł
+const IP = "192.168.68.119"; // FIXME: paweł
 const PORT = 8080;
+
+enum WsType {
+  Display,
+  UI,
+  Controller,
+}
+enum MsgType {
+  Config = "cfg",
+  Action = "act",
+  Close = "cls",
+}
+
+const game = new Game();
 
 const server = Bun.serve({
   port: PORT,
   async fetch(req, server) {
-    const url = new URL(req.url);
+    const url = new URL(req.url).pathname;
 
-    if (url.pathname === "/") {
+    if (url === "/joincode") {
       try {
         const qr = await QRCode.toDataURL(
           `${IP}:${server.port}`,
@@ -23,70 +37,103 @@ const server = Bun.serve({
       }
     }
 
-    if (url.pathname === "/display") {
-      return new Response(Bun.file("./display/index.html"));
+    if (url.startsWith("/display")) {
+      return displayRouter(url.replace("/display", ""), req, server);
     }
-    if (url.pathname === "/display/main.js") {
-      return new Response(Bun.file("./display/main.js"));
+    if (url.startsWith("/controller")) {
+      return controllerRouter(url.replace("/controller", ""), req, server);
     }
-    if (url.pathname === "/display/three.js") {
-      return new Response(
-        Bun.file("./node_modules/three/build/three.module.js"),
-      );
-    }
-    if (url.pathname === "/display/sockets.js") {
-      return new Response(
-        Bun.file("./display/sockets.js"),
-      );
-    }
-    if (url.pathname === "/display/ws") {
-      // upgrade the request to a WebSocket
-      if (server.upgrade(req, { data: { isDisplay: true } })) {
-        return; // do not return a Response
+
+    if (url === "/ui") {
+      if (server.upgrade(req, { data: { type: WsType.UI } })) {
+        return;
       }
 
-      return new Response("Upgrade failed :(", { status: 500 });
-    }
-
-    if (url.pathname === "/ping") {
-      return new Response("pong [available]");
-    }
-
-    if (url.pathname === "/controller/ws") {
-      // upgrade the request to a WebSocket
-      if (server.upgrade(req, { data: { isDisplay: false } })) {
-        return; // do not return a Response
-      }
-
-      return new Response("Upgrade failed :(", { status: 500 });
+      return new Response("display ws upgrade failed", { status: 500 });
     }
 
     return new Response("not found", { status: 404 });
   },
   websocket: {
     open(ws) {
-      console.log("connection opened");
-
-      if (ws.data.isDisplay) {
+      if (ws.data.type === WsType.Display) {
         ws.subscribe("display-broadcast");
+
         console.log("display connected");
-      } else {
+      } else if (ws.data.type === WsType.UI) {
+        ws.subscribe("ui-broadcast");
+
+        console.log("ui connected");
+      } else if (ws.data.type === WsType.Controller) {
+        const id = ws.data.id;
+        const car = game.get(id);
+
+        server.publish(
+          "ui-broadcast",
+          `<div id="players" hx-swap-oob="beforeend"><div id="player-${id}" style="color: ${car?.color};">${id} - ${car?.name}</div></div>`,
+        );
+
         console.log("controller connected");
       }
     },
     message(ws, message: string) {
-      console.log(message);
-      ws.send(message); // echo back the message
+      if (ws.data.type === WsType.Controller) {
+        const msg = JSON.parse(message);
+        const id = ws.data.id;
 
-      server.publish("display-broadcast", message);
+        if (msg.type === MsgType.Config) {
+          game.updateCar(id, msg.data);
+          server.publish(
+            "ui-broadcast",
+            `<div id="player-${id}" style="color: ${msg.data.color};">${id} - ${msg.data.name}</div>`,
+          );
+
+          server.publish(
+            "display-broadcast",
+            JSON.stringify({
+              type: MsgType.Config,
+              id,
+              data: msg.data,
+            }),
+          );
+        } else if (msg.type === MsgType.Action) {
+          server.publish(
+            "display-broadcast",
+            JSON.stringify({
+              type: MsgType.Action,
+              id,
+              data: msg.data,
+            }),
+          );
+        }
+      }
     },
     close(ws) {
-      console.log("connection closed");
-
-      if (ws.data.isDisplay) {
+      if (ws.data.type === WsType.Display) {
         ws.unsubscribe("display-broadcast");
+
         console.log("display disconnected");
-      } else {
+      } else if (ws.data.type === WsType.UI) {
+        ws.unsubscribe("ui-broadcast");
+
+        console.log("ui disconnected");
+      } else if (ws.data.type === WsType.Controller) {
+        const id = ws.data.id;
+
+        game.remove(id);
+        server.publish(
+          "ui-broadcast",
+          `<div id="player-${id}"></div>`,
+        );
+
+        server.publish(
+          "display-broadcast",
+          JSON.stringify({
+            type: MsgType.Close,
+            id,
+          }),
+        );
+
         console.log("controller disconnected");
       }
     },
@@ -94,3 +141,50 @@ const server = Bun.serve({
 });
 
 console.log(`Listening on http://${server.hostname}:${server.port}`);
+
+function displayRouter(url: string, req, server) {
+  if (url === "") {
+    return new Response(Bun.file("./display/index.html"));
+  }
+  if (url === "/main.js") {
+    return new Response(Bun.file("./display/main.js"));
+  }
+  if (url === "/three.js") {
+    return new Response(
+      Bun.file("./node_modules/three/build/three.module.js"),
+    );
+  }
+  if (url === "/sockets.js") {
+    return new Response(
+      Bun.file("./display/sockets.js"),
+    );
+  }
+
+  if (url === "/ws") {
+    if (server.upgrade(req, { data: { type: WsType.Display } })) {
+      return;
+    }
+
+    return new Response("display ws upgrade failed", { status: 500 });
+  }
+
+  return new Response("not found", { status: 404 });
+}
+
+function controllerRouter(url: string, req, server) {
+  if (url === "/ping") {
+    return new Response("pong [available]");
+  }
+
+  if (url === "/ws") {
+    const id = game.add();
+
+    if (server.upgrade(req, { data: { type: WsType.Controller, id } })) {
+      return;
+    }
+
+    return new Response("controller ws upgrade failed", { status: 500 });
+  }
+
+  return new Response("not found", { status: 404 });
+}
