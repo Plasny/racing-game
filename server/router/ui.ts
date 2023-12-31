@@ -15,7 +15,7 @@ const ws = {
   playerConnected: (server, id: number, config: any) => {
     server.publish(
       "ui-broadcast",
-      `<div id="players" hx-swap-oob="beforeend"><div id="player-${id}" style="color: ${config.color};">${id} - ${config.name}</div></div>`,
+      `<div id="players" hx-swap-oob="beforeend"><div id="player-${id}" style="color: ${config.color};" onclick="track(${id})">${id} - ${config.name}</div></div>`,
     );
   },
   playerDisconnected: (server, id: number) => {
