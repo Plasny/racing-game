@@ -1,19 +1,12 @@
 import QRCode from "qrcode";
-import Game from "./game";
+import Game from "./game.ts";
+import { MsgType, WsType } from "./types.ts";
+import displayRouter, { ws as Display } from "./router/display.ts";
+import controllerRouter from "./router/controller.ts";
+import uiRouter, { ws as Ui } from "./router/ui.ts";
 
 const IP = "192.168.68.119"; // FIXME: paweł
 const PORT = 8080;
-
-enum WsType {
-  Display,
-  UI,
-  Controller,
-}
-enum MsgType {
-  Config = "cfg",
-  Action = "act",
-  Close = "cls",
-}
 
 const game = new Game();
 
@@ -38,18 +31,24 @@ const server = Bun.serve({
     }
 
     if (url.startsWith("/display")) {
-      return displayRouter(url.replace("/display", ""), req, server);
+      return displayRouter(game, url.replace("/display", ""), req, server);
     }
     if (url.startsWith("/controller")) {
-      return controllerRouter(url.replace("/controller", ""), req, server);
+      return controllerRouter(
+        game,
+        url.replace("/controller", ""),
+        req,
+        server,
+      );
     }
 
-    if (url === "/ui") {
-      if (server.upgrade(req, { data: { type: WsType.UI } })) {
-        return;
-      }
-
-      return new Response("display ws upgrade failed", { status: 500 });
+    if (url.startsWith("/ui")) {
+      return uiRouter(
+        game,
+        url.replace("/ui", ""),
+        req,
+        server,
+      );
     }
 
     return new Response("not found", { status: 404 });
@@ -65,14 +64,6 @@ const server = Bun.serve({
 
         console.log("ui connected");
       } else if (ws.data.type === WsType.Controller) {
-        const id = ws.data.id;
-        const car = game.get(id);
-
-        server.publish(
-          "ui-broadcast",
-          `<div id="players" hx-swap-oob="beforeend"><div id="player-${id}" style="color: ${car?.color};">${id} - ${car?.name}</div></div>`,
-        );
-
         console.log("controller connected");
       }
     },
@@ -83,28 +74,11 @@ const server = Bun.serve({
 
         if (msg.type === MsgType.Config) {
           game.updateCar(id, msg.data);
-          server.publish(
-            "ui-broadcast",
-            `<div id="player-${id}" style="color: ${msg.data.color};">${id} - ${msg.data.name}</div>`,
-          );
 
-          server.publish(
-            "display-broadcast",
-            JSON.stringify({
-              type: MsgType.Config,
-              id,
-              data: msg.data,
-            }),
-          );
+          Ui.playerConnected(server, id, msg.data);
+          Display.playerConnected(server, id, msg.data);
         } else if (msg.type === MsgType.Action) {
-          server.publish(
-            "display-broadcast",
-            JSON.stringify({
-              type: MsgType.Action,
-              id,
-              data: msg.data,
-            }),
-          );
+          Display.action(server, id, msg.data);
         }
       }
     },
@@ -121,18 +95,9 @@ const server = Bun.serve({
         const id = ws.data.id;
 
         game.remove(id);
-        server.publish(
-          "ui-broadcast",
-          `<div id="player-${id}"></div>`,
-        );
 
-        server.publish(
-          "display-broadcast",
-          JSON.stringify({
-            type: MsgType.Close,
-            id,
-          }),
-        );
+        Ui.playerDisconnected(server, id);
+        Display.playerDisconnected(server, id);
 
         console.log("controller disconnected");
       }
@@ -141,50 +106,3 @@ const server = Bun.serve({
 });
 
 console.log(`Listening on http://${server.hostname}:${server.port}`);
-
-function displayRouter(url: string, req, server) {
-  if (url === "") {
-    return new Response(Bun.file("./display/index.html"));
-  }
-  if (url === "/main.js") {
-    return new Response(Bun.file("./display/main.js"));
-  }
-  if (url === "/three.js") {
-    return new Response(
-      Bun.file("./node_modules/three/build/three.module.js"),
-    );
-  }
-  if (url === "/sockets.js") {
-    return new Response(
-      Bun.file("./display/sockets.js"),
-    );
-  }
-
-  if (url === "/ws") {
-    if (server.upgrade(req, { data: { type: WsType.Display } })) {
-      return;
-    }
-
-    return new Response("display ws upgrade failed", { status: 500 });
-  }
-
-  return new Response("not found", { status: 404 });
-}
-
-function controllerRouter(url: string, req, server) {
-  if (url === "/ping") {
-    return new Response("pong [available]");
-  }
-
-  if (url === "/ws") {
-    const id = game.add();
-
-    if (server.upgrade(req, { data: { type: WsType.Controller, id } })) {
-      return;
-    }
-
-    return new Response("controller ws upgrade failed", { status: 500 });
-  }
-
-  return new Response("not found", { status: 404 });
-}

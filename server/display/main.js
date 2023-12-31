@@ -13,35 +13,55 @@ const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-const cubes = [];
+const cars = [];
+
+let tracking = null;
+window.track = (carId) => {
+  if (tracking === carId) {
+    tracking = null;
+  } else {
+    tracking = carId;
+
+    // TODO: move camera to car
+  }
+};
 
 camera.position.z = 5;
 
 initSocket((msg) => {
   const { type, id, data } = JSON.parse(msg);
   if (type === "cfg") {
-    const geometry = new THREE.BoxGeometry(1, 1, 1);
-    const cube = new THREE.Mesh(geometry, [
+    const car = new THREE.Mesh(
+      new THREE.BoxGeometry(1, 1, 1),
       new THREE.MeshBasicMaterial({ color: data.color }),
-      new THREE.MeshBasicMaterial({ color: data.color }),
-      new THREE.MeshBasicMaterial({ color: data.color }),
-      new THREE.MeshBasicMaterial({ color: data.color }),
-      new THREE.MeshBasicMaterial({ color: data.color }),
-      new THREE.MeshBasicMaterial({ color: data.color }),
-    ]);
-    cubes[id] = cube;
-    scene.add(cube);
+    );
+    cars[id] = car;
+    scene.add(car);
   } else if (type === "act") {
-    const cube = cubes[id];
+    const car = cars[id];
     const [rotation, acceleration] = data;
 
-    cube.rotation.z = rotation * 0.01;
-    cube.position.z -= acceleration * 0.1;
-  } else if (type === "cls") {
-    const cube = cubes[id];
-    scene.remove(cube);
+    if (tracking === id) {
+      const oldObjectPosition = new THREE.Vector3();
+      car.getWorldPosition(oldObjectPosition);
 
-    delete cubes[id];
+      car.rotation.z = rotation * 0.01;
+      car.position.z -= acceleration * 0.1;
+
+      const newObjectPosition = new THREE.Vector3();
+      car.getWorldPosition(newObjectPosition);
+
+      const delta = newObjectPosition.clone().sub(oldObjectPosition);
+      camera.position.add(delta);
+    } else {
+      car.rotation.z = rotation * 0.01;
+      car.position.z -= acceleration * 0.1;
+    }
+  } else if (type === "cls") {
+    const car = cars[id];
+    scene.remove(car);
+
+    delete cars[id];
   }
 });
 
