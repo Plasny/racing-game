@@ -62,6 +62,7 @@ const server = Bun.serve({
       } else if (ws.data.type === WsType.UI) {
         ws.subscribe("ui-broadcast");
 
+        Ui.uiConnected(server, game.getCars());
         console.log("ui connected");
       } else if (ws.data.type === WsType.Controller) {
         console.log("controller connected");

@@ -27,6 +27,10 @@ class Game {
   public updateCar(id: number, car: Car) {
     this.cars[id] = { ...car, id } as Car;
   }
+
+  public getCars(): Car[] {
+    return this.cars;
+  }
 }
 
 export default Game;

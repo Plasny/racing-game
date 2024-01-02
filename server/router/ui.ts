@@ -12,6 +12,16 @@ function router(game: Game, url: string, req, server) {
 }
 
 const ws = {
+  uiConnected: (server, cars: any[]) => {
+    server.publish(
+      "ui-broadcast",
+      `<div id="players" hx-swap-oob="beforeend">${
+        cars.map(({ id, color, name }) =>
+          `<div id="player-${id}" style="color: ${color};">${id} - ${name}</div>`
+        ).join("")
+      }</div>`,
+    );
+  },
   playerConnected: (server, id: number, config: any) => {
     server.publish(
       "ui-broadcast",
