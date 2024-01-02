@@ -9,9 +9,6 @@ import Connector from "../components/Connector";
 import { LogBox } from "react-native";
 LogBox.ignoreLogs(["new NativeEventEmitter"]);
 
-// TODO add user identification
-// TODO add connnection using qr-code
-
 export default function Join({ navigation }) {
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
@@ -21,7 +18,7 @@ export default function Join({ navigation }) {
     return unsubscribe;
   }, [navigation]);
 
-  const [url, setUrl] = useState(null);
+  const [conf, setConf] = useState(null);
 
   /**
    * @type {React.Ref<WebSocket>}
@@ -29,22 +26,22 @@ export default function Join({ navigation }) {
   const ws = useRef(null);
 
   useEffect(() => {
-    if (!url) return;
+    if (!conf) return;
 
-    ws.current = new WebSocket(url);
+    ws.current = new WebSocket(conf.url);
     ws.current.onopen = () => {
-      navigation.replace("config", { ws });
+      navigation.replace("config", { ws, id: conf.id });
     };
     ws.current.onclose = () => {
-      setUrl(null);
+      setConf(null);
     };
-  }, [url]);
+  }, [conf]);
 
   return (
     <View style={[s.container]}>
       <StatusBar style="dark" />
 
-      <Connector onScanned={setUrl} />
+      <Connector onScanned={setConf} />
     </View>
   );
 }

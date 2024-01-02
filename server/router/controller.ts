@@ -1,7 +1,8 @@
+import { Server } from "bun";
 import Game from "../game.ts";
 import { WsType } from "../types.ts";
 
-function router(game: Game, url: string, req, server) {
+function router(game: Game, url: string, req: Request, server: Server) {
   if (url === "/ping") {
     return new Response("pong [available]");
   }

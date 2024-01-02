@@ -9,6 +9,10 @@ import {
 import React, { useEffect, useState } from "react";
 import * as ScreenOrientation from "expo-screen-orientation";
 
+// hides warnings
+import { LogBox } from "react-native";
+LogBox.ignoreLogs(["new NativeEventEmitter"]);
+
 export default function Config({ navigation, route }) {
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
@@ -20,6 +24,12 @@ export default function Config({ navigation, route }) {
 
   const [name, setName] = useState("");
   const [color, setColor] = useState("#fff");
+  const [okColor, setOkColor] = useState(true);
+
+  useEffect(() => {
+    setOkColor(/^(rgb|rgba)\(([0-9]{1,3}),\s*([0-9]{1,3}),\s*([0-9]{1,3})(,\s*\d+(\.\d+)?)?\)$/.test(color)
+        || /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color))   
+  }, [color])
 
   return (
     <View style={s.container}>
@@ -30,27 +40,34 @@ export default function Config({ navigation, route }) {
         value={name}
         onChangeText={setName}
       />
+
       <TextInput
-        style={[s.textInput, { color }]}
+        style={[s.textInput, okColor && { color }]}
         value={color}
         onChangeText={setColor}
       />
 
-      <TouchableNativeFeedback
+      { !okColor 
+      ? <Text style={[s.btnText, {color: "red"}]}>Wrong color</Text>
+      : <TouchableNativeFeedback
         onPress={() => {
-          route.params.ws.current.send(
-            JSON.stringify({
-              type: "cfg",
-              data: { name: name || "unnamed", color },
-            }),
-          );
-          navigation.navigate("controller", { ...route.params });
+          const data = JSON.stringify({
+            type: "cfg",
+            data: { 
+              name: name || "unnamed", 
+              color ,
+              id: route.params.id
+            },
+          })
+          route.params.ws.current.send(data);
+          navigation.replace("controller", { ...route.params });
         }}
       >
         <View style={[s.btn]}>
           <Text style={s.btnText}>Connect</Text>
         </View>
       </TouchableNativeFeedback>
+      }
     </View>
   );
 }
@@ -71,6 +88,8 @@ const s = StyleSheet.create({
     marginTop: 5,
     fontSize: 20,
   },
+  btn: {
+  },
   btnText: {
     textAlign: "center",
     color: "#fff",
@@ -78,3 +97,4 @@ const s = StyleSheet.create({
     padding: 20,
   },
 });
+

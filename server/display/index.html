@@ -9,6 +9,15 @@
 		body {
 			margin: 0;
 		}
+        #players {
+            user-select: none;
+            margin-left: 1rem;
+            margin-bottom: 1rem;
+        }
+        h3 {
+            user-select: none;
+            text-align: center;
+        }
 	</style>
 
 	<script src="https://unpkg.com/htmx.org@1.9.9"></script>
@@ -20,12 +29,16 @@
 			  "sockets": "/display/sockets.js"
 			}
 		  }
-		</script>
+	</script>
 </head>
 
 <body>
 	<div class="absolute bg-white" hx-ext="ws" ws-connect="/ui">
-		<div hx-get="/joincode" hx-trigger="load" hx-swap="outerHTML"></div>
+		<div 
+            hx-get="/joincode" 
+            hx-trigger="load" 
+            hx-swap="outerHTML"
+        ></div>
 
 		<h3>click to track</h3>
 		<div id="players"></div>

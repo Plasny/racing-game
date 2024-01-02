@@ -21,6 +21,7 @@ window.track = (carId) => {
     tracking = null;
   } else {
     tracking = carId;
+    console.log("tracking ", carId)
 
     // TODO: move camera to car
   }

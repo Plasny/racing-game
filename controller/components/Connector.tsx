@@ -10,7 +10,7 @@ import {
 import { BarCodeScanner } from "expo-barcode-scanner";
 
 export default function Connector(
-  { onScanned }: { onScanned: (data: string) => void },
+  { onScanned }: { onScanned: (data: {url: string, id: number}) => void },
 ) {
   const [hasPermission, setHasPermission] = useState(null);
   const [scanned, setScanned] = useState(false);
@@ -35,17 +35,19 @@ export default function Connector(
     }
   }, [hasPermission]);
 
-  const handleConnect = async (host: string) => {
+  const handleConnect = async (json: string) => {
+    const config = JSON.parse(json);
+
     setScanned(true);
 
     try {
       const isAvailable =
-        (await (await fetch(`http://${host}/controller/ping`)).text()) ===
+        (await (await fetch(`http://${config.server}/controller/ping`)).text()) ===
           "pong [available]";
 
       if (isAvailable) {
         Vibration.vibrate(100);
-        onScanned(`ws://${host}/controller/ws`);
+        onScanned({ url: `ws://${config.server}/controller/ws`, id: config.id} );
       } else {
         setError("Connection failed, the server is not available");
       }
@@ -126,6 +128,10 @@ const s = StyleSheet.create({
     borderRadius: 5,
     marginTop: 5,
     fontSize: 20,
+  },
+  btn: {
+  },
+  text: {
   },
   btnText: {
     textAlign: "center",

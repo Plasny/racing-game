@@ -20,10 +20,16 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "one.plasny.racing.controller"
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "58b4920c-e1dd-4958-b96e-97b3a94470ab"
+      }
     }
   }
 }

@@ -9,15 +9,10 @@ import {
 import { Accelerometer } from "expo-sensors";
 import React, { useEffect, useState } from "react";
 import * as ScreenOrientation from "expo-screen-orientation";
-
 import Wheel from "../components/Wheel.js";
 
-// hides warnings
 import { LogBox } from "react-native";
 LogBox.ignoreLogs(["new NativeEventEmitter"]);
-
-// TODO add user identification
-// TODO add connnection using qr-code
 
 export default function Controller({ navigation, route }) {
   useEffect(() => {
@@ -28,7 +23,8 @@ export default function Controller({ navigation, route }) {
     return unsubscribe;
   }, [navigation]);
 
-  Accelerometer.setUpdateInterval(100);
+  // Accelerometer.setUpdateInterval(100);
+  Accelerometer.setUpdateInterval(1000);
 
   const [on, setOn] = useState(false);
   const [subscription, setSubscription] = useState(null);

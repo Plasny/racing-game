@@ -1,7 +1,8 @@
+import { Server } from "bun";
 import Game from "../game.ts";
 import { MsgType, WsType } from "../types.ts";
 
-function router(game: Game, url: string, req, server) {
+function router(game: Game, url: string, req: Request, server: Server) {
   if (url === "") {
     return new Response(Bun.file("./display/index.html"));
   }
@@ -31,7 +32,7 @@ function router(game: Game, url: string, req, server) {
 }
 
 const ws = {
-  playerConnected: (server, id: number, config: any) => {
+  playerConnected: (server: Server, id: number, config: any) => {
     server.publish(
       "display-broadcast",
       JSON.stringify({
@@ -41,7 +42,7 @@ const ws = {
       }),
     );
   },
-  playerDisconnected: (server, id: number) => {
+  playerDisconnected: (server: Server, id: number) => {
     server.publish(
       "display-broadcast",
       JSON.stringify({
@@ -50,7 +51,7 @@ const ws = {
       }),
     );
   },
-  action: (server, id: number, action: any) => {
+  action: (server: Server, id: number, action: any) => {
     server.publish(
       "display-broadcast",
       JSON.stringify({
