@@ -1,5 +1,6 @@
 import { StatusBar } from "expo-status-bar";
 import {
+    BackHandler,
   StyleSheet,
   Text,
   TextInput,
@@ -14,6 +15,17 @@ import { LogBox } from "react-native";
 LogBox.ignoreLogs(["new NativeEventEmitter"]);
 
 export default function Config({ navigation, route }) {
+  useEffect(() => {
+      const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => {
+          navigation.replace("join");
+          return true;
+      },
+    );
+
+    return () => backHandler.remove();
+  }, [])
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
       ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT);
@@ -55,8 +67,7 @@ export default function Config({ navigation, route }) {
             type: "cfg",
             data: { 
               name: name || "unnamed", 
-              color ,
-              id: route.params.id
+              color,
             },
           })
           route.params.ws.current.send(data);

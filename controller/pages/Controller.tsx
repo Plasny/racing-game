@@ -23,8 +23,7 @@ export default function Controller({ navigation, route }) {
     return unsubscribe;
   }, [navigation]);
 
-  // Accelerometer.setUpdateInterval(100);
-  Accelerometer.setUpdateInterval(1000);
+  Accelerometer.setUpdateInterval(100);
 
   const [on, setOn] = useState(false);
   const [subscription, setSubscription] = useState(null);

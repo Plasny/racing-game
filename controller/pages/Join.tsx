@@ -18,7 +18,7 @@ export default function Join({ navigation }) {
     return unsubscribe;
   }, [navigation]);
 
-  const [conf, setConf] = useState(null);
+  const [url, setUrl] = useState(null);
 
   /**
    * @type {React.Ref<WebSocket>}
@@ -26,22 +26,22 @@ export default function Join({ navigation }) {
   const ws = useRef(null);
 
   useEffect(() => {
-    if (!conf) return;
+    if (!url) return;
 
-    ws.current = new WebSocket(conf.url);
+    ws.current = new WebSocket(url);
     ws.current.onopen = () => {
-      navigation.replace("config", { ws, id: conf.id });
+        navigation.replace("config", { ws });
     };
     ws.current.onclose = () => {
-      setConf(null);
+      setUrl(null);
     };
-  }, [conf]);
+  }, [url]);
 
   return (
     <View style={[s.container]}>
       <StatusBar style="dark" />
 
-      <Connector onScanned={setConf} />
+      <Connector onScanned={setUrl} />
     </View>
   );
 }

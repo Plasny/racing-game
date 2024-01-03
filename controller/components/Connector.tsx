@@ -8,13 +8,15 @@ import {
   View,
 } from "react-native";
 import { BarCodeScanner } from "expo-barcode-scanner";
+import { useIsFocused } from '@react-navigation/native';
 
 export default function Connector(
-  { onScanned }: { onScanned: (data: {url: string, id: number}) => void },
+  { onScanned }: { onScanned: (data: string) => void },
 ) {
   const [hasPermission, setHasPermission] = useState(null);
   const [scanned, setScanned] = useState(false);
 
+  const isFocused = useIsFocused();
   useEffect(() => {
     const getBarCodeScannerPermissions = async () => {
       const { status } = await BarCodeScanner.requestPermissionsAsync();
@@ -22,7 +24,8 @@ export default function Connector(
     };
 
     getBarCodeScannerPermissions();
-  }, []);
+    setScanned(false);
+  }, [isFocused]);
 
   const [error, setError] = useState(null);
   useEffect(() => {
@@ -35,23 +38,23 @@ export default function Connector(
     }
   }, [hasPermission]);
 
-  const handleConnect = async (json: string) => {
-    const config = JSON.parse(json);
-
+  const handleConnect = async (url: string) => {
+    const host = url.split("/")[0]
     setScanned(true);
 
     try {
       const isAvailable =
-        (await (await fetch(`http://${config.server}/controller/ping`)).text()) ===
+        (await (await fetch(`http://${host}/controller/ping`)).text()) ===
           "pong [available]";
 
       if (isAvailable) {
         Vibration.vibrate(100);
-        onScanned({ url: `ws://${config.server}/controller/ws`, id: config.id} );
+        onScanned("ws://" + url);
       } else {
         setError("Connection failed, the server is not available");
       }
     } catch (error) {
+      console.log(error)
       setError("Connection failed, the server is not available");
     }
   };
