@@ -1,6 +1,7 @@
 import { Server } from "bun";
 import Game from "../game.ts";
 import { WsType } from "../types.ts";
+import { NextCarId } from "../State.ts";
 
 function router(game: Game, url: string, req: Request, server: Server) {
   if (url === "/ping") {
@@ -8,7 +9,8 @@ function router(game: Game, url: string, req: Request, server: Server) {
   }
 
   if (url === "/ws") {
-    const id = game.add();
+    const s = new URL(req.url).searchParams;
+    const id = s.get("id") || NextCarId();
 
     if (server.upgrade(req, { data: { type: WsType.Controller, id } })) {
       return;

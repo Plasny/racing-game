@@ -22,6 +22,55 @@ const server = Bun.serve({
   async fetch(req, server) {
     const url = new URL(req.url).pathname;
 
+    if (url === "/") {
+        return new Response(Bun.file("otherWay/index.html"));
+    }
+    if (url === "/style.css") {
+        return new Response(Bun.file("otherWay/style.css"));
+    }
+    if (url === "/js/_main.js") {
+        return new Response(Bun.file("otherWay/js/_main.js"));
+    }
+    if (url === "/js/join.js") {
+        return new Response(Bun.file("otherWay/js/join.js"));
+    }
+    if (url === "/js/sockets.js") {
+        return new Response(Bun.file("otherWay/js/sockets.js"));
+    }
+    if (url === "/js/3d.js") {
+        return new Response(Bun.file("otherWay/js/3d.js"));
+    }
+    if (url === "/js/three.js") {
+      return new Response(
+        Bun.file("./node_modules/three/build/three.module.js"),
+      );
+    }
+
+    if (url == "/join" && req.headers.get("Accept") == "text/plain") {
+        return new Response(NextCarId() + "");
+    }
+    if (url == "/join" && req.headers.get("Accept") == "text/svg+xml") {
+      const id = new URL(req.url).searchParams.get("id") || NextCarId();
+
+      try {
+        const qr = await QRCode.toString(
+          IP + ":" + PORT + "/controller/ws?id=" + id,
+          { 
+            type: "svg", 
+            color: { light: "#0000" },
+            errorCorrectionLevel: 'L',
+          },
+        );
+
+        return new Response(qr, {
+          headers: { "content-type": "text/svg+xml" },
+        });
+      } catch (e) {
+        console.log("error while generating a qrcode", e);
+        return new Response("could not generate a qrcode", { status: 500 });
+      }
+    }
+
     if (url === "/joincode") {
       const id = new URL(req.url).searchParams.get("id") || NextCarId();
       try {
@@ -51,7 +100,6 @@ const server = Bun.serve({
 
     if (url.startsWith("/controller")) {
       return controllerRouter(
-        game,
         url.replace("/controller", ""),
         req,
         server,
@@ -98,7 +146,7 @@ const server = Bun.serve({
           Ui.playerConnected(server, id, msg.data);
           Display.playerConnected(server, id, msg.data);
         } else if (msg.type === MsgType.Action) {
-          updateCar(1, msg.data[0], msg.data[1])
+          updateCar(id, msg.data[0], msg.data[1])
           Display.action(server, id, msg.data);
         }
       }
