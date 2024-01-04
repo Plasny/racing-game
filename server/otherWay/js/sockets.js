@@ -1,5 +1,5 @@
 import { showJoinUI, hideJoinUI, id } from "/js/join.js";
-import { addCar, delCar } from "./3d.js"; 
+import { addCar, delCar, updateCar } from "./3d.js";
 
 export function socketInit() {
     const socket = new WebSocket(
@@ -30,6 +30,11 @@ export function socketInit() {
         if (msg.type == "cls") {
             delCar(msg.id);
         }
+
+        if (msg.type == "act") {
+            console.log(msg.data)
+            updateCar(msg.id, msg.data.x, msg.data.y, msg.data.direction)
+        }
     };
 
     socket.onclose = function(event) {
@@ -39,6 +44,11 @@ export function socketInit() {
             );
         } else {
             console.log("connection died");
+
+            setTimeout(() => {
+                socketInit();
+                showJoinUI();
+            }, 1000);
         }
     };
 

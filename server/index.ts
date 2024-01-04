@@ -5,7 +5,7 @@ import displayRouter, { ws as Display } from "./router/display.ts";
 import controllerRouter from "./router/controller.ts";
 import uiRouter, { ws as Ui } from "./router/ui.ts";
 import type { ServerWebSocket } from "bun";
-import { NextCarId, newCar, updateCar } from "./State.ts";
+import { CARS, NextCarId, newCar, updateCar } from "./State.ts";
 
 const PORT = 8080;
 const IP = Object.values(require("os").networkInterfaces())
@@ -100,6 +100,7 @@ const server = Bun.serve({
 
     if (url.startsWith("/controller")) {
       return controllerRouter(
+        game,
         url.replace("/controller", ""),
         req,
         server,
@@ -142,12 +143,12 @@ const server = Bun.serve({
         if (msg.type === MsgType.Config) {
           game.updateCar(id, msg.data);
 
-          newCar(msg.data.id, msg.data.color, msg.data.name);
+          newCar(id, msg.data.color, msg.data.name);
           Ui.playerConnected(server, id, msg.data);
           Display.playerConnected(server, id, msg.data);
         } else if (msg.type === MsgType.Action) {
-          updateCar(id, msg.data[0], msg.data[1])
-          Display.action(server, id, msg.data);
+          const car = updateCar(id, msg.data[0], msg.data[1])
+          Display.action(server, id, car);
         }
       }
     },

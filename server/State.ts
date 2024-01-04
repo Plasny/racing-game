@@ -8,8 +8,11 @@ type Player = {
     name: string,
 }
 
+const MAX_SPEED = 3;
 let Cid = 0;
 
+// seperate working cars from non working
+// export let CARS_QUE: number[] = [];
 export let CARS: Player[] = [];
 
 export const NextCarId = () => ++Cid;
@@ -23,8 +26,10 @@ export function newCar(
 
     CARS.push({
         id: id,
-        x: id % 2 * 10, 
-        y: Math.floor(id / 2) * 10, 
+        x: 0,
+        y: 0,
+        // x: id % 2 * 10, 
+        // y: Math.floor(id / 2) * 10, 
         direction: 0,
         speed: 0,
         color,
@@ -43,8 +48,11 @@ export function updateCar(id: number, angle: number, acceleration: number) {
     car.direction += turningSpeed * angle;
     car.speed += accelerationSpeed * acceleration;
 
-    car.x += car.speed * Math.cos(car.direction);
-    car.y += car.speed * Math.sin(car.direction);
+    if (car.speed > MAX_SPEED) car.speed = MAX_SPEED;
 
-    console.log(car);
+    car.x += car.speed * Math.cos(car.direction * Math.PI / 180);
+    car.y += car.speed * Math.sin(car.direction * Math.PI / 180);
+
+    // console.log(car);
+    return car;
 }
