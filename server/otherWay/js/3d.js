@@ -8,7 +8,8 @@ const camera = new THREE.PerspectiveCamera(
     0.1,
     100,
 );
-camera.position.z = 10;
+camera.position.y = 10;
+camera.lookAt(0, 0, 0);
 
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -18,63 +19,70 @@ function animate() {
 
     if(MainId && scene.getObjectByName("car-" + MainId)) {
         const r = 20;
-        const p = scene.getObjectByName("car-" + MainId).position
-        camera.position.x = p.y;
-        camera.position.y = p.x;
-        camera.position.z = r;
+        const car = scene.getObjectByName("car-" + MainId)
+        const p = car.position
+        camera.position.x = p.x - r * Math.sin(car.userData.ang);
+        camera.position.z = p.z - r * Math.cos(car.userData.ang);
+        camera.position.y = r;
+        camera.lookAt(p);
     }
     renderer.render(scene, camera);
 }
 
 function initScene() {
+    // const axesHelper = new THREE.AxesHelper( 1000 );
+    // axesHelper.setColors(0xff0000, 0x00ff00, 0x0000ff)
+    // scene.add( axesHelper );
+
     const geo = new THREE.PlaneGeometry(2000, 2000);
     const mat = new THREE.MeshBasicMaterial({ color: 0x486F38, side: THREE.DoubleSide });
     const plane = new THREE.Mesh(geo, mat);
+    plane.rotateX(0.5 * Math.PI);
     scene.add(plane);
     console.log(plane);
 
     const carG = new THREE.BoxGeometry(1, 1, 1);
     const carM = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-    for (let i = 0; i <= 100; i += 2) {
+    for (let i = 0; i <= 100; i += 5) {
         let car = new THREE.Mesh(
             carG, carM
         );
-        car.position.y = i;
+        car.position.z = i;
         car.position.x = i;
         scene.add(car);
 
         car = new THREE.Mesh(
             carG, carM
         );
-        car.position.y = -i;
+        car.position.z = -i;
         car.position.x = -i;
         scene.add(car);
 
         car = new THREE.Mesh(
             carG, carM
         );
-        car.position.y = i;
+        car.position.z = i;
         car.position.x = -i;
         scene.add(car);
 
         car = new THREE.Mesh(
             carG, carM
         );
-        car.position.y = -i;
+        car.position.z = -i;
         car.position.x = i;
         scene.add(car);
 
         car = new THREE.Mesh(
             carG, carM
         );
-        car.position.y = 0;
+        car.position.z = 0;
         car.position.x = -i;
         scene.add(car);
 
         car = new THREE.Mesh(
             carG, carM
         );
-        car.position.y = 0;
+        car.position.z = 0;
         car.position.x = i;
 
         scene.add(car);
@@ -82,14 +90,14 @@ function initScene() {
             carG, carM
         );
         car.position.x = 0;
-        car.position.y = -i;
+        car.position.z = -i;
         scene.add(car);
 
         car = new THREE.Mesh(
             carG, carM
         );
         car.position.x = 0;
-        car.position.y = i;
+        car.position.z = i;
         scene.add(car);
     }
 }
@@ -106,7 +114,14 @@ export function addCar(id, color) {
 
     const car = new THREE.Mesh(
         new THREE.BoxGeometry(1, 1, 1),
-        new THREE.MeshBasicMaterial({ color: threeColor }),
+        [
+            new THREE.MeshBasicMaterial({ color: threeColor }),
+            new THREE.MeshBasicMaterial({ color: threeColor }),
+            new THREE.MeshBasicMaterial({ color: threeColor }),
+            new THREE.MeshBasicMaterial({ color: threeColor }),
+            new THREE.MeshBasicMaterial({ color: threeColor }),
+            new THREE.MeshBasicMaterial({ color: 0x000000 }),
+        ]
     );
     car.name = "car-" + id;
 
@@ -127,7 +142,8 @@ export function clearSceen() {
 
 export function updateCar(id, x, y, angle) {
     const carObj = scene.getObjectByName("car-" + id);
-    carObj.userData.ang = angle;
-    carObj.position.set(x, y, 0);
-    console.log(carObj.position, carObj.userData)
+    carObj.userData.ang = angle * Math.PI / 180;
+    carObj.position.set(y, 0, x);
+    carObj.rotation.y = carObj.userData.ang;
+    console.log(carObj.position, carObj.userData);
 }

@@ -15,6 +15,8 @@ const IP = Object.values(require("os").networkInterfaces())
     .filter(addr => addr != "127.0.0.1")
     .at(0);
 
+console.log(IP);
+
 const game = new Game();
 
 const server = Bun.serve({
